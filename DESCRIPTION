@@ -9,3 +9,4 @@ Description: Contains holiday and electricity demand data for eight New England 
 License: GPL-2
 Encoding: UTF-8
 LazyData: true
+RoxygenNote: 6.0.1
