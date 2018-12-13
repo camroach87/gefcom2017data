@@ -1,0 +1,11 @@
+Package: gefcom2017data
+Type: Package
+Title: GEFCom2017 data
+Version: 0.1.0
+Author: Cameron Roach
+Maintainer: Cameron Roach <cameron.roach@monash.edu>
+Description: Contains holiday and electricity demand data for eight New England zones.
+    This data was used to create probabilistic hierarchical forecasts for the 2017 Global Energy Forecasting Competition.
+License: GPL-2
+Encoding: UTF-8
+LazyData: true
