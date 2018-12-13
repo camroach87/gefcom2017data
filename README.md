@@ -17,3 +17,14 @@ Northeast Massachusetts       | NEMASSBOST  | Bottom
 
 
 As this data is for the defined data track only dew point and dry bulb temperature variables are included in the `gefcom` data frame.
+
+
+## Installation
+
+From your R console, simply run:
+
+```{r}
+install.packages("devtools")
+library(devtools)
+devtools::install_github("camroach87/gefcom2017data")
+```
