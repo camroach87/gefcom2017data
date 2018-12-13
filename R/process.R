@@ -88,7 +88,7 @@ total <- gefcom %>%
   dplyr::ungroup() %>%
   dplyr::mutate(Zone = "TOTAL")
 
-gefcom <- bind_rows(gefcom, mass, total)
+gefcom <- dplyr::bind_rows(gefcom, mass, total)
 
 # Save gefcom data frame
 devtools::use_data(gefcom, overwrite = T)
