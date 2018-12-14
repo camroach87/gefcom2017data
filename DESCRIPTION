@@ -9,7 +9,7 @@ Description: Contains holiday and electricity demand data for eight New England 
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.1
 Depends: 
     R (>= 3.1.2)
 Imports:
