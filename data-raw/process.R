@@ -10,6 +10,10 @@
 #' Saves a gefcom data_frame containing raw data and calendar variables.
 #'
 #' Author: Cameron Roach
+rm(list=ls())
+
+library(tidyverse)
+library(readxl)
 
 root_dir <- system.file("extdata", package = "gefcom2017data")
 load_zones <- c("ME", "NH", "VT", "CT", "RI", "SEMASS", "WCMASS", "NEMASSBOST")
@@ -23,36 +27,34 @@ for (iF in files) {
   file_name <- file.path(root_dir, "smd", iF)
 
   for (iS in load_zones) {
-    tmp <- readxl::read_excel(file_name, sheet = iS) %>%
-      dplyr::mutate(Zone = iS,
-                    Date = as.Date(Date)) %>%
-      dplyr::select(Date, Hour, Zone, Demand = DEMAND, DryBulb, DewPnt) %>%
-      dplyr::filter(!is.na(Demand)) # some spreadsheet tabs have trailing blank rows
-
-    gefcom <- dplyr::bind_rows(gefcom, tmp)
+    gefcom <- readxl::read_excel(file_name, sheet = iS) %>%
+      dplyr::rename_all(tolower) %>%
+      dplyr::mutate(zone = iS,
+                    date = as.Date(date)) %>%
+      dplyr::select(date, hour, zone, demand, drybulb, dewpnt) %>%
+      dplyr::filter(!is.na(demand)) %>%  # for trailing blank rows
+      dplyr::bind_rows(gefcom)
   }
 }
 
 # Add holidays and calendar variables
 holidays <- read.csv(file.path(root_dir, "holidays/holidays.csv"),
                      stringsAsFactors = FALSE) %>%
-  dplyr::mutate(Date = lubridate::mdy(Date))
+  dplyr::rename_all(tolower) %>%
+  dplyr::rename(holiday_name = holiday) %>%
+  dplyr::mutate(date = lubridate::mdy(date))
 
 gefcom <- gefcom %>%
-  dplyr::left_join(holidays, by = "Date") %>%
-  dplyr::mutate(Holiday = dplyr::if_else(is.na(Holiday), "NH", Holiday),
-                Holiday_flag = dplyr::if_else(Holiday == "NH", FALSE, TRUE),
-                ts = lubridate::ymd_h(paste(Date, Hour - 1)),
-                Period = factor(Hour, levels = 1:24, ordered = FALSE),
-                Year = lubridate::year(ts),
-                Month = factor(lubridate::month(ts, label = TRUE),
-                               ordered = FALSE),
-                DoW = factor(lubridate::wday(ts, label = TRUE),
-                             ordered = FALSE),
-                DoY = lubridate::yday(ts),
-                Weekend = dplyr::if_else(DoW %in% c("Sat", "Sun"), TRUE,
-                                         FALSE))
-
+  dplyr::left_join(holidays, by = "date") %>%
+  dplyr::mutate(
+    holiday = dplyr::if_else(is.na(holiday_name), FALSE, TRUE),
+    ts = lubridate::ymd_h(paste(date, hour - 1)),
+    year = lubridate::year(ts),
+    month = factor(lubridate::month(ts, label = TRUE), ordered = FALSE),
+    day_of_week = factor(lubridate::wday(ts, label = TRUE), ordered = FALSE),
+    day_of_year = lubridate::yday(ts),
+    weekend = dplyr::if_else(day_of_week %in% c("Sat", "Sun"), TRUE, FALSE)
+  )
 
 # Remove DST hours
 dst_times <- read.csv(file.path(root_dir, "dst_ts.csv")) %>%
@@ -63,32 +65,45 @@ gefcom <- gefcom %>%
   dplyr::filter(!(ts %in% dst_times$dst_start)) %>%
   dplyr::filter(!(ts %in% dst_times$dst_end))
 
-# Shift DoY for leap years. Feb 29 has DoY == 60
+# Shift day of year for leap years. Feb 29 has day_of_year == 60
 gefcom <- gefcom %>%
-  dplyr::mutate(DoY = dplyr::if_else(lubridate::leap_year(Year) & DoY >= 60,
-                                     DoY - 1, DoY))
+  dplyr::mutate(
+    day_of_year = dplyr::if_else(
+      lubridate::leap_year(year) & day_of_year >= 60, day_of_year - 1,
+      day_of_year)
+  )
 
 # Create aggregated zones
 mass <- gefcom %>%
-  dplyr::filter(Zone %in% c("SEMASS", "WCMASS", "NEMASSBOST")) %>%
-  dplyr::group_by(Date, Hour, Holiday, Holiday_flag, ts, Period, Year, Month,
-                  DoW, DoY, Weekend) %>%
-  dplyr::summarise(Demand = sum(Demand),
-                   DryBulb = mean(DryBulb),
-                   DewPnt = mean(DewPnt)) %>%
+  dplyr::filter(zone %in% c("SEMASS", "WCMASS", "NEMASSBOST")) %>%
+  dplyr::group_by(date, hour, holiday_name, holiday, ts, hour, year, month,
+                  day_of_week, day_of_year, weekend) %>%
+  dplyr::summarise(demand = sum(demand),
+                   drybulb = mean(drybulb),
+                   dewpnt = mean(dewpnt)) %>%
   dplyr::ungroup() %>%
-  dplyr::mutate(Zone = "MASS")
+  dplyr::mutate(zone = "MASS")
 
 total <- gefcom %>%
-  dplyr::group_by(Date, Hour, Holiday, Holiday_flag, ts, Period, Year, Month,
-                  DoW, DoY, Weekend) %>%
-  dplyr::summarise(Demand = sum(Demand),
-                   DryBulb = mean(DryBulb),
-                   DewPnt = mean(DewPnt)) %>%
+  dplyr::group_by(date, hour, holiday_name, holiday, ts, hour, year, month,
+                  day_of_week, day_of_year, weekend) %>%
+  dplyr::summarise(demand = sum(demand),
+                   drybulb = mean(drybulb),
+                   dewpnt = mean(dewpnt)) %>%
   dplyr::ungroup() %>%
-  dplyr::mutate(Zone = "TOTAL")
+  dplyr::mutate(zone = "TOTAL")
 
 gefcom <- dplyr::bind_rows(gefcom, mass, total)
 
+# Add trend for each zone
+gefcom <- gefcom %>%
+  group_by(zone) %>%
+  mutate(trend = as.numeric(ts - min(ts))/3600)
+
+# Reorder columns
+gefcom <- gefcom %>%
+  select(ts, zone, demand, drybulb, dewpnt, date, year, month, hour,
+         day_of_week, day_of_year, weekend, holiday_name, holiday, trend)
+
 # Save gefcom data frame
-devtools::use_data(gefcom, overwrite = T)
+usethis::use_data(gefcom, overwrite = TRUE)
