@@ -28,3 +28,5 @@ install.packages("devtools")
 library(devtools)
 devtools::install_github("camroach87/gefcom2017data")
 ```
+
+If you experience any trouble installing the repository, the processed data is stored in a .rda file located at `data/gefcom.rda`.
