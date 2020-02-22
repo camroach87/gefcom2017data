@@ -10,7 +10,7 @@
 #' Saves a gefcom data_frame containing raw data and calendar variables.
 #'
 #' Author: Cameron Roach
-rm(list=ls())
+rm(list = ls())
 
 library(tidyverse)
 library(readxl)
@@ -97,13 +97,15 @@ gefcom <- dplyr::bind_rows(gefcom, mass, total)
 
 # Add trend for each zone
 gefcom <- gefcom %>%
-  group_by(zone) %>%
-  mutate(trend = as.numeric(ts - min(ts))/3600)
+  dplyr::group_by(zone) %>%
+  dplyr::mutate(trend = as.numeric(ts - min(ts))/3600) %>%
+  dplyr::ungroup()
 
 # Reorder columns
 gefcom <- gefcom %>%
-  select(ts, zone, demand, drybulb, dewpnt, date, year, month, hour,
-         day_of_week, day_of_year, weekend, holiday_name, holiday, trend)
+  dplyr::select(ts, zone, demand, drybulb, dewpnt, date, year, month, hour,
+                day_of_week, day_of_year, weekend, holiday_name, holiday,
+                trend)
 
 # Save gefcom data frame
 usethis::use_data(gefcom, overwrite = TRUE)
