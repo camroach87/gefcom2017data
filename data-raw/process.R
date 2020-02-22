@@ -105,7 +105,8 @@ gefcom <- gefcom %>%
 gefcom <- gefcom %>%
   dplyr::select(ts, zone, demand, drybulb, dewpnt, date, year, month, hour,
                 day_of_week, day_of_year, weekend, holiday_name, holiday,
-                trend)
+                trend) %>%
+  dplyr::arrange(zone, ts)
 
 # Save gefcom data frame
 usethis::use_data(gefcom, overwrite = TRUE)
