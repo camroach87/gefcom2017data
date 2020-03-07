@@ -1,6 +1,6 @@
 # gefcom2017data
 
-Data for eight zones in New England as used in the direct track of the 2017 Global Energy Forecasting Competition (GEFCom2017). Zones are included in the table below.
+Data for eight bottom-level zones and two aggregated zones in New England as used in the direct track of the 2017 Global Energy Forecasting Competition (GEFCom2017). Zones are shown in the table below.
 
 Zone                          | Abbreviation | Type
 ------------------------------|-------------|-----------
